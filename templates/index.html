@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detección de Marca de Zapatos</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen">
+
+    <h1 class="text-3xl font-bold mb-6">Detección de Marca de Zapatos</h1>
+    
+    <input type="file" id="fileInput" class="mb-4 p-2 border border-gray-300 rounded" accept="image/*">
+
+    <div id="imageContainer" class="mb-4">
+        <!-- La imagen se mostrará aquí -->
+    </div>
+
+    <button onclick="uploadImage()" class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">Subir y Predecir</button>
+    <p id="result" class="text-lg font-semibold mt-4"></p>
+
+    <script>
+        document.getElementById('fileInput').addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                // Mostrar la imagen seleccionada
+                const img = document.createElement('img');
+                img.src = URL.createObjectURL(file);
+                img.classList.add('w-64', 'h-64', 'object-cover', 'rounded');
+                
+                const imageContainer = document.getElementById('imageContainer');
+                imageContainer.innerHTML = ''; // Limpiar imagen anterior
+                imageContainer.appendChild(img);
+            }
+        });
+
+        async function uploadImage() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                document.getElementById('result').innerText = "¡Por favor selecciona un archivo!";
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                // Enviar la imagen para predicción
+                const response = await fetch('http://127.0.0.1:5000/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`¡Error HTTP! Estado: ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+
+                // Mostrar resultado de la predicción
+                const brandName = result.predicted_label;
+                const confidence = (result.confidence * 100).toFixed(2);
+
+                document.getElementById('result').innerText = `Marca Predicha: ${brandName} con una confianza de: ${confidence}%`;
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('result').innerText = `Error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
